@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BreakWindow/BreakWindow.csproj" />
+    <Project Path="src/BreakWindow.Core/BreakWindow.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BreakWindow.Core.Tests/BreakWindow.Core.Tests.csproj" />
+  </Folder>
+</Solution>
