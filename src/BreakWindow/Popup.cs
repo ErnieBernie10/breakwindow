@@ -110,7 +110,7 @@ internal abstract unsafe class Popup
 
     public void SetTheme(bool darkMode)
     {
-        if (!IsOpen || darkMode == dark)
+        if (!IsOpen)
         {
             return;
         }

@@ -203,13 +203,12 @@ internal sealed unsafe class App
     private void OnThemeChanged()
     {
         var dark = Theme.AppsUseDarkTheme;
-        if (dark == darkMode)
+        if (dark != darkMode)
         {
-            return;
+            darkMode = dark;
+            Theme.ApplyToMenus(dark);
         }
 
-        darkMode = dark;
-        Theme.ApplyToMenus(dark);
         reminder.SetTheme(dark);
         countdown.SetTheme(dark);
     }
