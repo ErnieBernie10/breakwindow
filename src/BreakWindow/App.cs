@@ -28,6 +28,8 @@ internal sealed unsafe class App
     private readonly BreakTracker tracker;
     private HWND hwnd;
     private uint taskbarCreated;
+    private readonly ReminderWindow reminder;
+    private readonly BreakCountdownWindow countdown;
     private Tray? tray;
     private uint timerInterval;
     private bool darkMode;
@@ -35,14 +37,16 @@ internal sealed unsafe class App
     public App()
     {
         tracker = new BreakTracker(settingsFile.Settings, new SystemClock(), new LastInputIdleSource());
+        reminder = new ReminderWindow(() => Act(tracker.StartBreak));
+        countdown = new BreakCountdownWindow(() => Act(tracker.CancelBreak));
     }
 
     public int Run()
     {
         current = this;
         Autostart.Apply(tracker.Settings.StartWithWindows);
-        darkMode = MenuTheme.AppsUseDarkTheme;
-        MenuTheme.Apply(darkMode);
+        darkMode = Theme.AppsUseDarkTheme;
+        Theme.ApplyToMenus(darkMode);
 
         var instance = (HINSTANCE)(nint)PInvoke.GetModuleHandle((PCWSTR)null).Value;
         fixed (char* className = "breakwindow.app")
@@ -66,6 +70,8 @@ internal sealed unsafe class App
 
         RunLoop();
 
+        reminder.Hide();
+        countdown.Hide();
         PInvoke.WTSUnRegisterSessionNotification(hwnd);
         tray.Dispose();
         settingsFile.Dispose();
@@ -159,7 +165,17 @@ internal sealed unsafe class App
                 {
                     OnThemeChanged();
                 }
+                else if (wParam.Value == (nuint)SYSTEM_PARAMETERS_INFO_ACTION.SPI_SETWORKAREA)
+                {
+                    reminder.Reposition();
+                    countdown.Reposition();
+                }
 
+                return default;
+
+            case PInvoke.WM_DISPLAYCHANGE:
+                reminder.Reposition();
+                countdown.Reposition();
                 return default;
 
             case PInvoke.WM_ENDSESSION:
@@ -186,14 +202,22 @@ internal sealed unsafe class App
 
     private void OnThemeChanged()
     {
-        var dark = MenuTheme.AppsUseDarkTheme;
+        var dark = Theme.AppsUseDarkTheme;
         if (dark == darkMode)
         {
             return;
         }
 
         darkMode = dark;
-        MenuTheme.Apply(dark);
+        Theme.ApplyToMenus(dark);
+        reminder.SetTheme(dark);
+        countdown.SetTheme(dark);
+    }
+
+    private void Act(Action action)
+    {
+        action();
+        Sync();
     }
 
     private void ReloadSettings()
@@ -211,6 +235,27 @@ internal sealed unsafe class App
         {
             timerInterval = interval;
             PInvoke.SetTimer(hwnd, TimerId, interval, null);
+        }
+
+        var phase = tracker.Phase;
+        if (phase == Phase.BreakDue)
+        {
+            reminder.SetOverdue(StatusText.Overdue(tracker.Overdue));
+            reminder.Show(darkMode);
+        }
+        else
+        {
+            reminder.Hide();
+        }
+
+        if (phase == Phase.OnBreak)
+        {
+            countdown.SetRemaining(StatusText.Countdown(tracker.BreakRemaining));
+            countdown.Show(darkMode);
+        }
+        else
+        {
+            countdown.Hide();
         }
 
         var tooltip = StatusText.Tooltip(tracker);
