@@ -29,6 +29,7 @@ public class SettingsJsonTests
         Assert.Contains("\"start\": \"08:00\"", json);
         Assert.Contains("\"Monday\"", json);
         Assert.DoesNotContain("\r", json);
+        Assert.DoesNotContain("Length", json);
     }
 
     [Fact]

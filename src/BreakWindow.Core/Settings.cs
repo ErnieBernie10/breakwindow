@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace BreakWindow.Core;
 
 public sealed record Settings
@@ -20,10 +22,13 @@ public sealed record Settings
 
     public bool StartWithWindows { get; set; } = true;
 
+    [JsonIgnore]
     public TimeSpan WorkLength => TimeSpan.FromMinutes(WorkMinutes);
 
+    [JsonIgnore]
     public TimeSpan BreakLength => TimeSpan.FromMinutes(BreakMinutes);
 
+    [JsonIgnore]
     public TimeSpan IdleGrace => TimeSpan.FromSeconds(IdleGraceSeconds);
 }
 
